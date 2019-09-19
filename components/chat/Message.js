@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardItem, Body, Text } from 'native-base';
 
-const Message = ({ text, user, isMyMessage }) => (
+const Message = ({ text, user }) => (
   <Card>
     <CardItem>
       <Body>

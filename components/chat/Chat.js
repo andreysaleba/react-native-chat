@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
-import { useApolloClient, useQuery } from '@apollo/react-hooks';
-import { Text, Container, Footer, Content, Form, Item, Input } from 'native-base';
+import { useApolloClient, useQuery, useSubscription } from '@apollo/react-hooks';
+import { Text, Container, Footer, Content } from 'native-base';
 import { GET_LAST_100_MESSAGES } from "../../graphql/query/message";
 import Message from "./Message";
 import { GET_CURRENT_USER } from "../../graphql/query/user";
 import SendMessage from "./SendMessage";
+import { MESSAGE_CREATED } from "../../graphql/subscription/message";
 
 const Chat = () => {
   const scrollEl = useRef(null);
@@ -13,6 +14,25 @@ const Chat = () => {
   const client = useApolloClient();
 
   const { id } = client.readQuery({ query: GET_CURRENT_USER });
+
+  useSubscription(MESSAGE_CREATED, {
+    onSubscriptionData: ({ client, subscriptionData: { data: { messageCreated } } }) => {
+      const { getLast100Messages } = client.readQuery({ query: GET_LAST_100_MESSAGES });
+
+      if (messageCreated.user.id !== id) {
+        client.writeQuery({
+          query: GET_LAST_100_MESSAGES,
+          data: {
+            getLast100Messages: [
+              ...getLast100Messages,
+              messageCreated
+            ]
+          }
+        });
+      }
+
+    }
+  });
 
   if (loading) return <Text>Loading ...</Text>;
   return (
@@ -27,7 +47,6 @@ const Chat = () => {
           <Message
             {...m}
             key={m.id}
-            isMyMessage={id === m.user_id}
           />)}
       </Content>
       <Footer>
